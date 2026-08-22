@@ -160,12 +160,17 @@ async def analyst_round(st: AppState, journal: Journal, trig: dict | None = None
 
     ticket = None
     if decision["direction"] != "flat" and abs(decision["score"]) >= guardrails.MIN_SCORE:
-        side = "BUY"  # paper book is long-only; long_no would buy the NO token (v2)
+        notional = min(guardrails.MAX_TICKET_USD, round(25 * abs(decision["score"]) * 2, 2))
         if decision["direction"] == "long_yes":
             ticket = {"market_id": mid_id, "question": market["question"],
                       "outcome": market["outcomes"][0], "token_id": tok,
-                      "side": side, "notional_usd": min(guardrails.MAX_TICKET_USD,
-                                                        round(25 * abs(decision["score"]) * 2, 2))}
+                      "side": "BUY", "notional_usd": notional}
+        elif decision["direction"] == "long_no" and market.get("no_token"):
+            # long the NO token — same pessimistic fill discipline, its own book
+            ticket = {"market_id": mid_id, "question": market["question"],
+                      "outcome": market["outcomes"][1] if len(market["outcomes"]) > 1 else "No",
+                      "token_id": market["no_token"],
+                      "side": "BUY", "notional_usd": notional}
     decision["ticket"] = ticket
     gated = guardrails.gate(decision, {m["market_id"] for m in st.universe},
                             st.paper, journal.journaled_buy_notional(),
@@ -186,7 +191,7 @@ async def analyst_round(st: AppState, journal: Journal, trig: dict | None = None
                    votes={v["name"]: [v["stance"], v["confidence"]] for v in votes})
 
     if gated["action"] == "TRADE" and gated["ticket"]:
-        book = st.books.get(tok, {})
+        book = st.books.get(gated["ticket"]["token_id"], {})
         event = st.paper.execute(gated["ticket"], book)
         if event:
             journal.append(event.pop("type"), **event, score=decision["score"],
@@ -272,6 +277,11 @@ async def run_sentinel(st: AppState, journal: Journal):
                 tok = m["yes_token"]
                 st.books[tok] = await asyncio.to_thread(feed.book_top, tok)
                 b = st.books[tok]
+                if m.get("no_token") and b["bid"] is not None and b["ask"] is not None:
+                    # binary complement, pessimistic by construction:
+                    # NO bid = 1 - YES ask, NO ask = 1 - YES bid
+                    st.books[m["no_token"]] = {"bid": round(1 - b["ask"], 4),
+                                               "ask": round(1 - b["bid"], 4)}
                 if b["bid"] is not None and b["ask"] is not None:
                     mid = (b["bid"] + b["ask"]) / 2
                     trig = det_update(st.detectors[tok],

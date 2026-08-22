@@ -27,6 +27,9 @@ NULL_DRAWS = int(os.environ.get("NULL_DRAWS", "60"))
 BOOTSTRAP_B = int(os.environ.get("BOOTSTRAP_B", "15"))
 
 BUDGET_USD = float(os.environ.get("BUDGET_USD", "1000"))
+# Supervisor act threshold on the normalized [-1, 1] score. 0.6 demanded
+# near-unanimity; 0.35 = a weighted-majority consensus, still arithmetic.
+MIN_SCORE = float(os.environ.get("MIN_SCORE", "0.35"))
 CHECKPOINT_PATH = os.environ.get("CHECKPOINT_PATH",
     os.path.join(os.path.dirname(__file__), "..", "checkpoints", "state.json"))
 JOURNAL_PATH = os.environ.get("JOURNAL_PATH",

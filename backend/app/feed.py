@@ -79,6 +79,7 @@ class Feed:
                 "question": m.get("question", ""),
                 "slug": m.get("slug", ""),
                 "yes_token": tokens[0],
+                "no_token": tokens[1] if len(tokens) > 1 else None,
                 "outcomes": outcomes or ["Yes", "No"],
                 "volume24hr": float(m.get("volume24hr") or 0),
                 "yes_price": yes,

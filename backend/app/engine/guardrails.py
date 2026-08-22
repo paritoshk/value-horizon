@@ -4,9 +4,11 @@ The LLM layer proposes; this module disposes. No ticket reaches the ledger
 without passing every check, and "no edge -> HOLD" is a first-class outcome.
 """
 
+from .. import config
+
 MAX_TICKET_USD = 50.0
 MAX_POSITIONS_PER_MARKET = 2
-MIN_SCORE = 0.6
+MIN_SCORE = config.MIN_SCORE
 LIFETIME_NOTIONAL_CAP = 500.0
 
 
