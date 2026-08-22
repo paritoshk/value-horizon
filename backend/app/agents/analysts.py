@@ -54,7 +54,8 @@ async def run_analyst(name: str, packet: dict) -> dict:
     parsed = parse_json_block(text)
     if not parsed or parsed.get("stance") not in ("long_yes", "long_no", "flat"):
         return {"name": name, **FLAT, "rationale": "(unparseable — flat)"}
-    bad = invented_numbers(str(parsed.get("rationale", "")), packet)
+    bad = invented_numbers(str(parsed.get("rationale", "")), packet,
+                           extra_text=_ROLE[name])
     if bad:
         return {"name": name, **FLAT,
                 "rationale": f"(guard tripped: invented numbers {bad[:3]} — flat)"}

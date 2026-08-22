@@ -44,9 +44,17 @@ def packet_numbers(packet: dict) -> set[str]:
     return allowed
 
 
-def invented_numbers(text: str, packet: dict) -> list[str]:
-    """Numbers in the text that appear nowhere in the packet (any rendering)."""
+def invented_numbers(text: str, packet: dict, extra_text: str = "") -> list[str]:
+    """Numbers in the text that appear nowhere in the packet (any rendering)
+    nor in extra_text (e.g. thresholds quoted from the analyst's own role
+    instructions). Small window constants (1h/4h/15m) are always allowed."""
     allowed = packet_numbers(packet)
+    allowed |= {"1", "4", "15", "24", "0", "1.0", "0.0"}
+    for tok in re.findall(r"-?\d[\d,]*\.?\d*", extra_text):
+        try:
+            allowed |= _num_forms(float(tok.rstrip(".").replace(",", "")))
+        except ValueError:
+            continue
     found = re.findall(r"-?\d[\d,]*\.?\d*", text)
     bad = []
     for tok in found:

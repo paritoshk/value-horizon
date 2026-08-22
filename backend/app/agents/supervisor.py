@@ -29,6 +29,6 @@ async def synthesize(decision: dict, market: dict) -> str:
         "State the outcome plainly; no hype; do not invent numbers.",
         f'Market: {market["question"]}. Votes: {stances}. '
         f'Combined score {decision["score"]:+.2f}. Action: {decision.get("action", "HOLD")}.',
-        max_tokens=90,
+        max_tokens=300,
     )
     return (text or f'score {decision["score"]:+.2f} -> {decision.get("action", "HOLD")}').strip()

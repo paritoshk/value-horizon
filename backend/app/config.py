@@ -11,7 +11,7 @@ if FIREWORKS_API_KEY and not os.environ.get("FIREWORKS_AI_API_KEY"):
     os.environ["FIREWORKS_AI_API_KEY"] = FIREWORKS_API_KEY
 BRAINTRUST_API_KEY = os.environ.get("BRAINTRUST_API_KEY", "")
 
-LLM_MODEL = os.environ.get("LLM_MODEL", "fireworks_ai/accounts/fireworks/models/kimi-k2-instruct")
+LLM_MODEL = os.environ.get("LLM_MODEL", "fireworks_ai/accounts/fireworks/models/gpt-oss-120b")
 
 POLL_FAST_S = int(os.environ.get("POLL_FAST_S", "10"))
 ANALYST_S = int(os.environ.get("ANALYST_S", "90"))
