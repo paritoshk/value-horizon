@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+.venv/
+.env
+backend/checkpoints/*
+!backend/checkpoints/.gitkeep
+node_modules/
+.next/
+out/
+.DS_Store
