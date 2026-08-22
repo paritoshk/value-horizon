@@ -1,0 +1,127 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+    --font-heading: var(--font-sans);
+    --font-sans: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    --color-sidebar-ring: var(--sidebar-ring);
+    --color-sidebar-border: var(--sidebar-border);
+    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    --color-sidebar-accent: var(--sidebar-accent);
+    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    --color-sidebar-primary: var(--sidebar-primary);
+    --color-sidebar-foreground: var(--sidebar-foreground);
+    --color-sidebar: var(--sidebar);
+    --color-chart-5: var(--chart-5);
+    --color-chart-4: var(--chart-4);
+    --color-chart-3: var(--chart-3);
+    --color-chart-2: var(--chart-2);
+    --color-chart-1: var(--chart-1);
+    --color-ring: var(--ring);
+    --color-input: var(--input);
+    --color-border: var(--border);
+    --color-destructive: var(--destructive);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-accent: var(--accent);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-muted: var(--muted);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-secondary: var(--secondary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-primary: var(--primary);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-popover: var(--popover);
+    --color-card-foreground: var(--card-foreground);
+    --color-card: var(--card);
+    --color-foreground: var(--foreground);
+    --color-background: var(--background);
+    /* Quant semantic colors (algae structure, sunrise = agent voice) */
+    --color-agent: var(--agent);
+    --color-algae: var(--algae-500);
+    --color-up: var(--up);
+    --color-down: var(--down);
+    --color-flat: var(--flat);
+    --radius-sm: calc(var(--radius) * 0.6);
+    --radius-md: calc(var(--radius) * 0.8);
+    --radius-lg: var(--radius);
+    --radius-xl: calc(var(--radius) * 1.4);
+    --radius-2xl: calc(var(--radius) * 1.8);
+    --radius-3xl: calc(var(--radius) * 2.2);
+    --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root {
+    --radius: 0.75rem;
+
+    /* Quant Agent kit — light theme */
+    --background: #F4F7F4;          /* ground */
+    --foreground: #14231C;          /* ink */
+    --card: #FFFFFF;                /* paper */
+    --card-foreground: #14231C;
+    --popover: #FFFFFF;
+    --popover-foreground: #14231C;
+
+    /* primary is NEUTRAL ink — orange is reserved for agent voice only */
+    --primary: #14231C;
+    --primary-foreground: #FFFFFF;
+    --secondary: #DCEBDF;           /* algae-200 */
+    --secondary-foreground: #1D3A2A;
+    --muted: #EDF3EE;               /* algae-100 */
+    --muted-foreground: #48604F;    /* ink-600 */
+    --accent: #DCEBDF;              /* algae-200 */
+    --accent-foreground: #1D3A2A;
+    --destructive: #B84A0C;         /* sunrise-700 (never pure red) */
+
+    --border: #D3DFD6;              /* line */
+    --input: #D3DFD6;
+    --ring: #8FBA9C;               /* algae-500 */
+
+    /* charts: chart-1 = agent voice (sunrise), rest = algae ramp */
+    --chart-1: #E8641A;
+    --chart-2: #5E9673;
+    --chart-3: #8FBA9C;
+    --chart-4: #BCD4C1;
+    --chart-5: #48604F;
+
+    --sidebar: #FFFFFF;
+    --sidebar-foreground: #14231C;
+    --sidebar-primary: #14231C;
+    --sidebar-primary-foreground: #FFFFFF;
+    --sidebar-accent: #EDF3EE;      /* algae-100 */
+    --sidebar-accent-foreground: #1D3A2A;
+    --sidebar-border: #D3DFD6;
+    --sidebar-ring: #8FBA9C;
+
+    /* semantic tokens */
+    --agent: #E8641A;               /* sunrise-500 — AGENT VOICE ONLY */
+    --agent-strong: #B84A0C;        /* sunrise-700 */
+    --agent-soft: #FFE7D8;          /* sunrise-050 */
+    --algae-100: #EDF3EE;
+    --algae-200: #DCEBDF;
+    --algae-500: #8FBA9C;
+    --algae-600: #5E9673;
+    --up: #5E9673;                  /* positive / long_yes */
+    --down: #B84A0C;               /* negative / long_no (orange-family) */
+    --flat: #8A9C90;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    -webkit-font-smoothing: antialiased;
+  }
+  html {
+    @apply font-sans;
+  }
+  /* all numbers use tabular figures in the same family — no monospace anywhere */
+  .tnum {
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+  }
+}
