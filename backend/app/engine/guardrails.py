@@ -10,9 +10,11 @@ MIN_SCORE = 0.6
 LIFETIME_NOTIONAL_CAP = 500.0
 
 
-def gate(decision: dict, universe: set[str], engine, journaled_notional: float) -> dict:
+def gate(decision: dict, universe: set[str], engine, journaled_notional: float,
+         max_ticket: float = MAX_TICKET_USD) -> dict:
     """decision: {score, action, ticket|None}. Returns
-    {action: "TRADE"|"HOLD", reasons: [...], ticket|None}."""
+    {action: "TRADE"|"HOLD", reasons: [...], ticket|None}.
+    max_ticket is the deterministic size cap from the walk-forward IC rule."""
     reasons = []
     score = decision.get("score", 0.0)
     ticket = decision.get("ticket")
@@ -25,6 +27,12 @@ def gate(decision: dict, universe: set[str], engine, journaled_notional: float) 
 
     if ticket["market_id"] not in universe:
         reasons.append(f"market {ticket['market_id'][:10]} not in discovered universe")
+    if ticket["notional_usd"] > max_ticket:
+        # size down instead of rejecting: the IC rule caps, the trade survives
+        ticket = {**ticket, "notional_usd": max_ticket}
+        reasons_note = f"sized to ${max_ticket:.0f} by walk-forward IC rule"
+    else:
+        reasons_note = None
     if ticket["notional_usd"] > MAX_TICKET_USD:
         reasons.append(f"ticket ${ticket['notional_usd']:.0f} exceeds ${MAX_TICKET_USD:.0f} cap")
     if ticket["notional_usd"] <= 0:
@@ -40,5 +48,7 @@ def gate(decision: dict, universe: set[str], engine, journaled_notional: float) 
 
     if reasons:
         return {"action": "HOLD", "reasons": reasons, "ticket": None}
-    return {"action": "TRADE", "reasons": [f"score {score:+.2f} cleared all gates"],
-            "ticket": ticket}
+    ok = [f"score {score:+.2f} cleared all gates"]
+    if reasons_note:
+        ok.append(reasons_note)
+    return {"action": "TRADE", "reasons": ok, "ticket": ticket}

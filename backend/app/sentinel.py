@@ -28,6 +28,7 @@ from .feed import Feed
 from .influence.graph import lead_lag_edges, shuffled_null, keep_real_edges
 from .influence.model import (fit_influence, bootstrap_influence, stability_table,
                               importances, interaction_heatmap)
+from .influence.backtest import signal_ic, max_ticket_usd
 from .influence import signal as sig
 from .state import AppState
 
@@ -65,6 +66,9 @@ def refit(st: AppState) -> dict:
     edge_list = [{"src": r.a[:10], "dst": r.b[:10], "w": round(float(r.w), 3),
                   "n": int(r.n)} for r in top_edges.itertuples()]
 
+    token_by_market = {m["market_id"]: m["yes_token"] for m in st.universe}
+    backtest = signal_ic(fills, st.prices, token_by_market, influential)
+
     return {
         "influential": influential,
         "wallet_cloud": cloud,
@@ -74,6 +78,8 @@ def refit(st: AppState) -> dict:
             "network_share": round(share, 4),
             "importances": importances(rf, X),
             "heatmap": interaction_heatmap(rf, X),
+            "backtest": backtest,
+            "max_ticket_usd": max_ticket_usd(backtest),
             "stages": {
                 "n_fills": int(len(fills)),
                 "n_wallets": int(fills["wallet"].nunique()),
@@ -153,7 +159,9 @@ async def analyst_round(st: AppState, journal: Journal):
                                                         round(25 * abs(decision["score"]) * 2, 2))}
     decision["ticket"] = ticket
     gated = guardrails.gate(decision, {m["market_id"] for m in st.universe},
-                            st.paper, journal.journaled_buy_notional())
+                            st.paper, journal.journaled_buy_notional(),
+                            max_ticket=st.model.get("max_ticket_usd",
+                                                    guardrails.MAX_TICKET_USD))
     decision["action"] = gated["action"]
     synthesis = await supervisor.synthesize(decision, mkt_view)
 

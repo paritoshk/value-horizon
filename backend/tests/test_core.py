@@ -43,11 +43,18 @@ def test_gate_holds_below_threshold():
     assert out["action"] == "HOLD"
 
 
-def test_gate_blocks_oversize_and_unknown_market():
+def test_gate_resizes_oversize_and_blocks_unknown_market():
     eng = PaperEngine()
-    assert gate(_decision(0.9, notional=500), {"m1"}, eng, 0.0)["action"] == "HOLD"
+    out = gate(_decision(0.9, notional=500), {"m1"}, eng, 0.0)
+    assert out["action"] == "TRADE" and out["ticket"]["notional_usd"] == 50.0
     assert gate(_decision(0.9, market="mX"), {"m1"}, eng, 0.0)["action"] == "HOLD"
     assert gate(_decision(0.9), {"m1"}, eng, 0.0)["action"] == "TRADE"
+
+
+def test_gate_ic_probe_sizing():
+    out = gate(_decision(0.9, notional=40.0), {"m1"}, PaperEngine(), 0.0, max_ticket=10.0)
+    assert out["action"] == "TRADE" and out["ticket"]["notional_usd"] == 10.0
+    assert any("IC rule" in r for r in out["reasons"])
 
 
 def test_gate_lifetime_cap():

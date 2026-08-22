@@ -2,7 +2,8 @@ import os
 
 from dotenv import load_dotenv
 
-load_dotenv()
+_BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+load_dotenv(os.path.join(_BACKEND_DIR, ".env"))
 
 FIREWORKS_API_KEY = os.environ.get("FIREWORKS_API_KEY", "")
 # LiteLLM reads FIREWORKS_AI_API_KEY; accept the shorter form too.
