@@ -5,13 +5,16 @@ from dotenv import load_dotenv
 _BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 load_dotenv(os.path.join(_BACKEND_DIR, ".env"))
 
+SAIL_API_KEY = os.environ.get("SAIL_API_KEY", "")
 FIREWORKS_API_KEY = os.environ.get("FIREWORKS_API_KEY", "")
-# LiteLLM reads FIREWORKS_AI_API_KEY; accept the shorter form too.
+# LiteLLM reads FIREWORKS_AI_API_KEY; unused unless we fall back.
 if FIREWORKS_API_KEY and not os.environ.get("FIREWORKS_AI_API_KEY"):
     os.environ["FIREWORKS_AI_API_KEY"] = FIREWORKS_API_KEY
 BRAINTRUST_API_KEY = os.environ.get("BRAINTRUST_API_KEY", "")
 
-LLM_MODEL = os.environ.get("LLM_MODEL", "fireworks_ai/accounts/fireworks/models/gpt-oss-120b")
+LLM_BASE_URL = os.environ.get("LLM_BASE_URL", "https://api.sailresearch.com/v1")
+LLM_MODEL = os.environ.get("LLM_MODEL", "zai-org/GLM-5.2-FP8")
+LLM_READY = bool(SAIL_API_KEY)
 
 POLL_FAST_S = int(os.environ.get("POLL_FAST_S", "10"))
 ANALYST_S = int(os.environ.get("ANALYST_S", "90"))

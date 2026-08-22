@@ -130,15 +130,24 @@ def update_cheap_signals(st: AppState):
         }
 
 
-async def analyst_round(st: AppState, journal: Journal):
+async def analyst_round(st: AppState, journal: Journal, trig: dict | None = None):
     """Pick the market with the strongest combined evidence, fan out analysts."""
     if not st.universe or not st.signals:
         return
-    # focus market: largest |flow z| + |imbalance|, tie-broken by volume
+    # focus market: largest |flow z| + |imbalance|, but rotate so one hot market
+    # doesn't monopolize every round — skip the last few we already looked at,
+    # unless a trigger points somewhere specific.
     def heat(m):
         s = st.signals.get(m["market_id"], {})
         return abs(s.get("flow", {}).get("z", 0)) + abs(s.get("imb_1h", {}).get("imbalance", 0))
-    market = max(st.universe, key=heat)
+    if trig and trig.get("market_id"):
+        market = next((m for m in st.universe if m["market_id"] == trig["market_id"]),
+                      max(st.universe, key=heat))
+    else:
+        recent = set(st.recent_focus)
+        fresh = [m for m in st.universe if m["market_id"] not in recent]
+        market = max(fresh or st.universe, key=heat)
+    st.recent_focus = (st.recent_focus + [market["market_id"]])[-4:]
     mid_id, tok = market["market_id"], market["yes_token"]
     s = st.signals.get(mid_id, {})
     mkt_view = {"question": market["question"], "mid": s.get("bid") and s.get("ask")
@@ -294,7 +303,7 @@ async def run_sentinel(st: AppState, journal: Journal):
             if now >= st.next_analyst_ts or st.trigger or st.poke:
                 st.poke = False
                 trig, st.trigger = st.trigger, None
-                await analyst_round(st, journal)
+                await analyst_round(st, journal, trig)
                 st.next_analyst_ts = time.time() + config.ANALYST_S
 
             if now >= st.next_refit_ts and \

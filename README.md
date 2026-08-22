@@ -52,7 +52,7 @@ kill — try it during a run.
 # backend (Python 3.12)
 cd backend
 python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
-FIREWORKS_API_KEY=... .venv/bin/uvicorn app.main:app --port 8600
+SAIL_API_KEY=... .venv/bin/uvicorn app.main:app --port 8600
 # without a key the analysts stay flat and the sentinel just holds — still live
 
 # frontend

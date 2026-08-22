@@ -8,9 +8,15 @@ services:
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 1
     healthCheckPath: /api/health
     envVars:
-      - key: FIREWORKS_API_KEY
+      - key: SAIL_API_KEY
         sync: false
+      - key: LLM_MODEL
+        value: zai-org/GLM-5.2-FP8
+      - key: LLM_BASE_URL
+        value: https://api.sailresearch.com/v1
       - key: BRAINTRUST_API_KEY
+        sync: false
+      - key: FIREWORKS_API_KEY
         sync: false
       - key: PYTHON_VERSION
         value: 3.12.4

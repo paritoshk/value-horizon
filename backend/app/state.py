@@ -32,6 +32,7 @@ class AppState:
         self.paper = PaperEngine(cash=config.BUDGET_USD, start_equity=config.BUDGET_USD)
         self.trigger: dict | None = None
         self.poke = False
+        self.recent_focus: list[str] = []
         # model artifacts (set by refit)
         self.model: dict = {}        # oob_r2, network_share, importances, heatmap, stage numbers
         self.influential: set[str] = set()

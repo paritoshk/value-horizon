@@ -1,4 +1,4 @@
-"""LLM access layer: Fireworks via LiteLLM, strict-JSON analyst calls, and an
+"""LLM access layer: Sail (OpenAI-compatible) for GLM analyst calls, and an
 invented-number guard — a rationale may only cite numbers present in its
 input packet. The model interprets; it never computes and never decides.
 """
@@ -80,17 +80,33 @@ def parse_json_block(text: str) -> dict | None:
 
 
 async def complete(system: str, user: str, max_tokens: int = 400) -> str | None:
-    if not config.FIREWORKS_API_KEY:
+    if not config.SAIL_API_KEY:
         return None
-    from litellm import acompletion
+    import httpx
+    url = config.LLM_BASE_URL.rstrip("/") + "/chat/completions"
     try:
-        resp = await acompletion(
-            model=config.LLM_MODEL,
-            messages=[{"role": "system", "content": system},
-                      {"role": "user", "content": user}],
-            max_tokens=max_tokens,
-            temperature=0.3,
-        )
-        return resp.choices[0].message.content
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            resp = await client.post(
+                url,
+                headers={
+                    "Authorization": f"Bearer {config.SAIL_API_KEY}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "model": config.LLM_MODEL,
+                    "messages": [
+                        {"role": "system", "content": system},
+                        {"role": "user", "content": user},
+                    ],
+                    "max_tokens": max_tokens,
+                    "temperature": 0.3,
+                    # GLM-5.2 thinks by default; thinking ate the token budget
+                    # and left content empty. Analysts need a direct JSON reply.
+                    "reasoning_effort": "none",
+                },
+            )
+            resp.raise_for_status()
+            msg = resp.json()["choices"][0]["message"]
+            return msg.get("content") or None
     except Exception:
         return None
