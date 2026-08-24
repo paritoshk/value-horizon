@@ -9,6 +9,7 @@ live on boot (they are public history; refetching is cheaper than persisting).
 import json
 import os
 import time
+from collections import deque
 
 import pandas as pd
 
@@ -39,6 +40,7 @@ class AppState:
         self.wallet_cloud: list[dict] = []
         self.edge_list: list[dict] = []
         self.signals: dict[str, dict] = {}       # market_id -> signal blocks
+        self.signal_history: dict[str, deque] = {}  # market_id -> deque[{ts, flow_z, imbalance, whale_net_usd}]
         self.last_round: dict = {}
         self.next_analyst_ts = 0.0
         self.next_refit_ts = 0.0

@@ -13,6 +13,7 @@ long-horizon record the UI renders.
 
 import asyncio
 import time
+from collections import deque
 
 import numpy as np
 import pandas as pd
@@ -128,6 +129,14 @@ def update_cheap_signals(st: AppState):
             "n_influential": len(st.influential),
             "oob_r2": oob,
         }
+        s = st.signals[mid_id]
+        hist = st.signal_history.setdefault(mid_id, deque(maxlen=500))
+        hist.append({
+            "ts": round(time.time(), 1),
+            "flow_z": s["flow"].get("z", 0.0),
+            "imbalance": s["imb_1h"].get("imbalance", 0.0),
+            "whale_net_usd": s["whale"].get("net_usd", 0.0),
+        })
 
 
 async def analyst_round(st: AppState, journal: Journal, trig: dict | None = None):

@@ -89,6 +89,15 @@ def poke(request: Request):
     return {"ok": True, "note": "analyst round will fire on next tick"}
 
 
+@router.get("/api/signals")
+def signals(request: Request, market_id: str, points: int = 500):
+    """Rolling per-market signal series (10s cadence, ~83 min at cap):
+    {ts, flow_z, imbalance, whale_net_usd} per point."""
+    st, _ = _st(request)
+    series = list(st.signal_history.get(market_id, []))[-points:]
+    return {"market_id": market_id, "series": series}
+
+
 @router.get("/api/history")
 def history(request: Request, market_id: str, points: int = 300):
     """Mid-price series for one market — real history (5-min bars from the
