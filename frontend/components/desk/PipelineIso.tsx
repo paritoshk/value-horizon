@@ -5,7 +5,7 @@
 // plates at translateZ 0/58/128/206, borders #C7D8CB, orange only on the
 // active plane). No three.js.
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Card,
   CardContent,
@@ -15,9 +15,11 @@ import {
 } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { fmtAgo } from "@/lib/api";
+import { AGENT_METRICS, type AgentKey } from "@/lib/desk";
 import {
   hasModel,
   hasRound,
+  type Market,
   type StateResponse,
   type Trade,
 } from "@/lib/types";
@@ -44,12 +46,22 @@ function lastTradeLabel(t: Trade | undefined): string {
 
 export default function PipelineIso({
   state,
+  selected,
+  focusMarket,
   className,
 }: {
   state: StateResponse | undefined;
+  /** Selected desk analyst — pre-picks its home plane for the detail panel. */
+  selected?: AgentKey;
+  focusMarket?: Market;
   className?: string;
 }) {
   const [picked, setPicked] = useState<PlaneId | null>(null);
+
+  // A new analyst selection re-contextualizes the detail panel.
+  useEffect(() => {
+    setPicked(null);
+  }, [selected]);
 
   const model = state && hasModel(state.model) ? state.model : null;
   const stages = model?.stages;
@@ -74,7 +86,14 @@ export default function PipelineIso({
     return 1;
   }, [state, lastTrade, round, now]);
 
-  const shown = picked ?? active;
+  // The selected analyst's "home" plane: influence reads the signal surface
+  // (02); imbalance and whale read raw market data (01).
+  const agentPlane: PlaneId | null = selected
+    ? selected === "influence_flow"
+      ? 2
+      : 1
+    : null;
+  const shown = picked ?? agentPlane ?? active;
 
   const details: Record<
     PlaneId,
@@ -142,6 +161,19 @@ export default function PipelineIso({
     },
   };
 
+  // Selected analyst's live reading of the focus market on its home plane.
+  if (selected) {
+    const metric = AGENT_METRICS[selected];
+    const v = focusMarket ? metric.fmt(focusMarket[metric.field] ?? 0) : "—";
+    if (selected === "influence_flow") {
+      details[2].rows.push(["Focus flow z", v]);
+    } else if (selected === "flow_imbalance") {
+      details[1].rows.push(["Focus imbalance (1h)", v]);
+    } else {
+      details[1].rows.push(["Focus whale net", v]);
+    }
+  }
+
   const shownPlane = PLANES.find((p) => p.id === shown)!;
   const shownDetail = details[shown];
 
@@ -156,9 +188,13 @@ export default function PipelineIso({
       </CardHeader>
       <CardContent>
         <div className="flex flex-col items-center gap-8 md:flex-row md:items-center">
-          {/* Isometric stack */}
-          <div className="relative h-[360px] w-[270px] shrink-0 select-none">
-            <div className="absolute inset-x-0 bottom-2 flex justify-center [perspective:1200px] motion-safe:animate-[drift_7s_ease-in-out_infinite]">
+          {/* Isometric stack — scaled down to trim dead vertical space while
+              keeping the raised plate inside the box */}
+          <div className="relative h-[260px] w-[230px] shrink-0 select-none">
+            <div
+              className="absolute inset-x-0 bottom-2 flex justify-center [perspective:1200px] motion-safe:animate-[drift_7s_ease-in-out_infinite]"
+              style={{ scale: "0.7", transformOrigin: "center bottom" }}
+            >
               <div
                 className="relative h-44 w-44"
                 style={{

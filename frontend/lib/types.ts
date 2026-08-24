@@ -212,6 +212,18 @@ export interface HistoryResponse {
   series: HistoryPoint[];
 }
 
+export interface SignalPoint {
+  ts: number; // unix seconds
+  flow_z: number;
+  imbalance: number;
+  whale_net_usd: number;
+}
+
+export interface SignalsResponse {
+  market_id: string;
+  series: SignalPoint[];
+}
+
 export function hasRound(a: StateResponse["agents"]): a is AgentRound {
   return !!a && typeof (a as AgentRound).round_ts === "number";
 }

@@ -22,7 +22,14 @@ function fmtTime(ts?: number) {
   });
 }
 
-export default function TradesTable({ trades }: { trades: Trade[] }) {
+export default function TradesTable({
+  trades,
+  ownerInitials,
+}: {
+  trades: Trade[];
+  /** market_id → initials of the analyst that ranks that market #1. */
+  ownerInitials?: Record<string, string>;
+}) {
   if (!trades.length) {
     return (
       <div className="flex h-40 flex-col items-center justify-center gap-1 rounded-lg border border-dashed text-center">
@@ -57,8 +64,20 @@ export default function TradesTable({ trades }: { trades: Trade[] }) {
                 <TableCell className="tnum text-muted-foreground">
                   {fmtTime(t.ts)}
                 </TableCell>
-                <TableCell className="max-w-[280px] truncate">
-                  {t.question ?? t.market_id ?? "—"}
+                <TableCell className="max-w-[280px]">
+                  <span className="flex items-center gap-1.5">
+                    {t.market_id && ownerInitials?.[t.market_id] && (
+                      <span
+                        className="grid size-5 shrink-0 place-items-center rounded border text-[9px] font-bold text-muted-foreground"
+                        title="Analyst ranking this market #1"
+                      >
+                        {ownerInitials[t.market_id]}
+                      </span>
+                    )}
+                    <span className="truncate">
+                      {t.question ?? t.market_id ?? "—"}
+                    </span>
+                  </span>
                 </TableCell>
                 <TableCell>
                   <Badge

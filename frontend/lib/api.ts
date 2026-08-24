@@ -7,6 +7,7 @@ import type {
   EdgesResponse,
   TimelineResponse,
   HistoryResponse,
+  SignalsResponse,
 } from "./types";
 
 export const API_URL =
@@ -44,6 +45,17 @@ export function useMarketHistory(marketId: string | undefined, points = 300) {
   return useSWR<HistoryResponse>(
     marketId ? `/api/history?market_id=${marketId}&points=${points}` : null,
     { refreshInterval: 30_000, revalidateOnFocus: false }
+  );
+}
+
+/**
+ * Raw analyst-signal history for one market (10s cadence, rolling buffer).
+ * The buffer accumulates live, so early series may be only a few points.
+ */
+export function useSignalHistory(marketId: string | undefined, points = 500) {
+  return useSWR<SignalsResponse>(
+    marketId ? `/api/signals?market_id=${marketId}&points=${points}` : null,
+    { refreshInterval: 10_000, revalidateOnFocus: false }
   );
 }
 

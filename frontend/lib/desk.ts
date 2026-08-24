@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMarketHistory } from "./api";
+import type { Market } from "./types";
 
 // The three agents shown on the desk, mapped to the API's analyst `name`s.
 export const AGENTS = [
@@ -26,6 +27,53 @@ export const AGENTS = [
 ] as const;
 
 export type AgentKey = (typeof AGENTS)[number]["key"];
+
+export type MetricField = "flow_z" | "imbalance" | "whale_net_usd";
+
+export type MetricBand =
+  | { kind: "sigma"; v: 1.5 }
+  | { kind: "abs"; v: 0.3 }
+  | { kind: "zero" };
+
+export interface AgentMetric {
+  field: MetricField;
+  label: string;
+  fmt: (v: number) => string;
+  band: MetricBand;
+}
+
+const sign = (v: number) => (v >= 0 ? "+" : "−");
+
+/** Each analyst's lens: which raw market signal it reads, and how to show it. */
+export const AGENT_METRICS: Record<AgentKey, AgentMetric> = {
+  influence_flow: {
+    field: "flow_z",
+    label: "Flow z",
+    fmt: (v) => `${sign(v)}${Math.abs(v).toFixed(2)}σ`,
+    band: { kind: "sigma", v: 1.5 },
+  },
+  flow_imbalance: {
+    field: "imbalance",
+    label: "Imbalance (1h)",
+    fmt: (v) => `${sign(v)}${Math.abs(v).toFixed(2)}`,
+    band: { kind: "abs", v: 0.3 },
+  },
+  whale: {
+    field: "whale_net_usd",
+    label: "Whale net",
+    fmt: (v) =>
+      `${v < 0 ? "−" : ""}$${Math.abs(Math.round(v)).toLocaleString("en-US")}`,
+    band: { kind: "zero" },
+  },
+};
+
+/** Markets ranked by the absolute strength of the agent's own metric. */
+export function rankMarketsFor(agent: AgentKey, markets: Market[]): Market[] {
+  const field = AGENT_METRICS[agent].field;
+  return [...markets].sort(
+    (a, b) => Math.abs(b[field] ?? 0) - Math.abs(a[field] ?? 0)
+  );
+}
 
 export interface MidPoint {
   t: number; // seconds
