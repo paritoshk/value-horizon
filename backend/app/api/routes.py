@@ -87,3 +87,20 @@ def poke(request: Request):
     st, _ = _st(request)
     st.poke = True
     return {"ok": True, "note": "analyst round will fire on next tick"}
+
+
+@router.get("/api/history")
+def history(request: Request, market_id: str, points: int = 300):
+    """Mid-price series for one market — real history (5-min bars from the
+    CLOB plus live ticks appended by the sentinel), stock-chart ready."""
+    st, _ = _st(request)
+    market = next((m for m in st.universe if m["market_id"] == market_id), None)
+    if not market:
+        return {"market_id": market_id, "series": []}
+    ser = st.prices.get(market["yes_token"])
+    if ser is None or len(ser) == 0:
+        return {"market_id": market_id, "series": []}
+    tail = ser.iloc[-max(points, 10):]
+    return {"market_id": market_id, "question": market["question"],
+            "series": [{"ts": int(ts.timestamp()), "p": round(float(p), 4)}
+                       for ts, p in tail.items()]}
