@@ -45,6 +45,12 @@ class PaperEngine:
         px = fill_price(book, ticket["side"])
         if px is None or px <= 0 or px >= 1:
             return None
+        # entry sanity: never open in a pinned/degenerate book — a 0.1c ask on a
+        # drifted market is not a fill, it's a data artifact
+        if ticket["side"] == "BUY":
+            bid = book.get("bid")
+            if px < 0.05 or px > 0.95 or bid is None or (px - bid) > 0.05:
+                return None
         if ticket["side"] == "BUY":
             qty = ticket["notional_usd"] / px
             if ticket["notional_usd"] > self.cash:

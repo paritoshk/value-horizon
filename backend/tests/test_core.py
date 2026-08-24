@@ -19,6 +19,17 @@ def test_fill_price_pessimistic():
     assert fill_price({"bid": None, "ask": None}, "BUY") is None
 
 
+def test_entry_rejected_in_pinned_or_degenerate_book():
+    eng = PaperEngine(cash=100.0)
+    t = {"market_id": "m", "question": "q", "outcome": "Yes", "token_id": "t",
+         "side": "BUY", "notional_usd": 17.6}
+    assert eng.execute(t, {"bid": 0.999, "ask": 0.001}) is None   # inverted artifact
+    assert eng.execute(t, {"bid": None, "ask": 0.5}) is None       # one-sided book
+    assert eng.execute(t, {"bid": 0.01, "ask": 0.02}) is None      # pinned low
+    assert eng.execute(t, {"bid": 0.40, "ask": 0.50}) is None      # 10c spread
+    assert eng.execute(t, {"bid": 0.60, "ask": 0.63}) is not None  # healthy book
+
+
 def test_paper_round_trip_loses_the_spread():
     eng = PaperEngine(cash=100.0)
     book = {"bid": 0.60, "ask": 0.63}
@@ -44,9 +55,11 @@ def test_gate_holds_below_threshold():
 
 
 def test_gate_resizes_oversize_and_blocks_unknown_market():
+    from app import config
     eng = PaperEngine()
-    out = gate(_decision(0.9, notional=500), {"m1"}, eng, 0.0)
-    assert out["action"] == "TRADE" and out["ticket"]["notional_usd"] == 50.0
+    out = gate(_decision(0.9, notional=5000), {"m1"}, eng, 0.0)
+    assert out["action"] == "TRADE"
+    assert out["ticket"]["notional_usd"] == config.TICKET_FULL_USD
     assert gate(_decision(0.9, market="mX"), {"m1"}, eng, 0.0)["action"] == "HOLD"
     assert gate(_decision(0.9), {"m1"}, eng, 0.0)["action"] == "TRADE"
 
@@ -58,7 +71,9 @@ def test_gate_ic_probe_sizing():
 
 
 def test_gate_lifetime_cap():
-    assert gate(_decision(0.9), {"m1"}, PaperEngine(), 490.0)["action"] == "HOLD"
+    from app.engine.guardrails import LIFETIME_NOTIONAL_CAP
+    near_cap = LIFETIME_NOTIONAL_CAP - 10.0
+    assert gate(_decision(0.9), {"m1"}, PaperEngine(), near_cap)["action"] == "HOLD"
 
 
 # ---------- detector ----------

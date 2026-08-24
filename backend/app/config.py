@@ -30,6 +30,10 @@ BUDGET_USD = float(os.environ.get("BUDGET_USD", "1000"))
 # Supervisor act threshold on the normalized [-1, 1] score. 0.6 demanded
 # near-unanimity; 0.35 = a weighted-majority consensus, still arithmetic.
 MIN_SCORE = float(os.environ.get("MIN_SCORE", "0.35"))
+# Deterministic sizing caps: full size when the walk-forward IC gate passes,
+# probe size otherwise. Both env-tunable.
+TICKET_FULL_USD = float(os.environ.get("TICKET_FULL_USD", "100"))
+TICKET_PROBE_USD = float(os.environ.get("TICKET_PROBE_USD", "25"))
 CHECKPOINT_PATH = os.environ.get("CHECKPOINT_PATH",
     os.path.join(os.path.dirname(__file__), "..", "checkpoints", "state.json"))
 JOURNAL_PATH = os.environ.get("JOURNAL_PATH",

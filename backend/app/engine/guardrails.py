@@ -6,10 +6,10 @@ without passing every check, and "no edge -> HOLD" is a first-class outcome.
 
 from .. import config
 
-MAX_TICKET_USD = 50.0
+MAX_TICKET_USD = config.TICKET_FULL_USD
 MAX_POSITIONS_PER_MARKET = 2
 MIN_SCORE = config.MIN_SCORE
-LIFETIME_NOTIONAL_CAP = 500.0
+LIFETIME_NOTIONAL_CAP = 2000.0
 
 
 def gate(decision: dict, universe: set[str], engine, journaled_notional: float,

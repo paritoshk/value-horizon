@@ -56,10 +56,14 @@ def signal_ic(fills: pd.DataFrame, prices: dict[str, pd.Series],
     return out
 
 
-def max_ticket_usd(backtest: dict, full_size: float = 50.0, probe: float = 10.0) -> float:
+def max_ticket_usd(backtest: dict, full_size: float | None = None,
+                   probe: float | None = None) -> float:
     """Deterministic sizing rule: full size only if the signal had positive
     walk-forward IC AND beat the raw-imbalance baseline on this window;
     otherwise probe size. Arithmetic, not judgment."""
+    from .. import config
+    full_size = full_size if full_size is not None else config.TICKET_FULL_USD
+    probe = probe if probe is not None else config.TICKET_PROBE_USD
     ic = (backtest or {}).get("ic_flow") or {}
     if backtest and backtest.get("flow_beats_baseline") and ic.get("ic", 0) > 0:
         return full_size

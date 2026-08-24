@@ -168,8 +168,12 @@ async def analyst_round(st: AppState, journal: Journal, trig: dict | None = None
     decision = supervisor.combine(list(votes))
 
     ticket = None
-    if decision["direction"] != "flat" and abs(decision["score"]) >= guardrails.MIN_SCORE:
-        notional = min(guardrails.MAX_TICKET_USD, round(25 * abs(decision["score"]) * 2, 2))
+    mid_now = mkt_view.get("mid")
+    in_band = mid_now is not None and 0.05 <= mid_now <= 0.95
+    if decision["direction"] != "flat" and abs(decision["score"]) >= guardrails.MIN_SCORE \
+            and in_band:
+        # size proportional to consensus strength, capped by the IC rule at the gate
+        notional = round(config.TICKET_FULL_USD * abs(decision["score"]), 2)
         if decision["direction"] == "long_yes":
             ticket = {"market_id": mid_id, "question": market["question"],
                       "outcome": market["outcomes"][0], "token_id": tok,
@@ -214,20 +218,32 @@ async def analyst_round(st: AppState, journal: Journal, trig: dict | None = None
 
 
 async def maybe_exit_positions(st: AppState, journal: Journal):
-    """Simple exit: close any position with >=15% gain or <=-20% loss at bid."""
+    """Exits, all deterministic: take-profit +15%, stop -20%, and pinned-book
+    capture — when a market drifts near resolution (bid >= 0.97 winning side,
+    or ask <= 0.05 dead side), realize at the live bid instead of holding a
+    position whose book is about to disappear."""
     for tok, pos in list(st.paper.positions.items()):
-        bid = (st.books.get(tok) or {}).get("bid")
+        book = st.books.get(tok) or {}
+        bid, ask = book.get("bid"), book.get("ask")
         if bid is None or pos.avg_cost <= 0:
             continue
         ret = (bid - pos.avg_cost) / pos.avg_cost
-        if ret >= 0.15 or ret <= -0.20:
+        reason = None
+        if bid >= 0.97:
+            reason = f"pinned winner capture at {bid:.2f}"
+        elif ask is not None and ask <= 0.05:
+            reason = f"pinned loser cut at {bid:.2f}"
+        elif ret >= 0.15:
+            reason = f"take-profit ret={ret:+.1%}"
+        elif ret <= -0.20:
+            reason = f"stop ret={ret:+.1%}"
+        if reason:
             event = st.paper.execute(
                 {"market_id": pos.market_id, "question": pos.question,
                  "outcome": pos.outcome, "token_id": tok, "side": "SELL",
                  "notional_usd": pos.qty * bid}, {"bid": bid, "ask": None})
             if event:
-                journal.append(event.pop("type"), **event,
-                               reason=f"exit rule ret={ret:+.1%}")
+                journal.append(event.pop("type"), **event, reason=reason)
 
 
 async def run_sentinel(st: AppState, journal: Journal):
