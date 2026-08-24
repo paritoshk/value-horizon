@@ -125,3 +125,14 @@
     letter-spacing: -0.01em;
   }
 }
+
+/* Design-system float for the isometric pipeline stack */
+@keyframes drift {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}

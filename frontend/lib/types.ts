@@ -201,6 +201,17 @@ export interface TimelineResponse {
   events: TimelineEvent[];
 }
 
+export interface HistoryPoint {
+  ts: number; // unix seconds
+  p: number; // implied YES probability 0..1
+}
+
+export interface HistoryResponse {
+  market_id: string;
+  question: string;
+  series: HistoryPoint[];
+}
+
 export function hasRound(a: StateResponse["agents"]): a is AgentRound {
   return !!a && typeof (a as AgentRound).round_ts === "number";
 }

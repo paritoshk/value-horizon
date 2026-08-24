@@ -6,6 +6,7 @@ import type {
   WalletsResponse,
   EdgesResponse,
   TimelineResponse,
+  HistoryResponse,
 } from "./types";
 
 export const API_URL =
@@ -33,6 +34,17 @@ export function useGraph(nFills: number | undefined) {
 
 export function useTimeline(limit = 200) {
   return useSWR<TimelineResponse>(`/api/timeline?limit=${limit}`);
+}
+
+/**
+ * Real price history for one market (~5-minute bars). Refreshes every 30s;
+ * between refreshes the desk appends the live mid from /api/state polls.
+ */
+export function useMarketHistory(marketId: string | undefined, points = 300) {
+  return useSWR<HistoryResponse>(
+    marketId ? `/api/history?market_id=${marketId}&points=${points}` : null,
+    { refreshInterval: 30_000, revalidateOnFocus: false }
+  );
 }
 
 export function fmtAgo(s: number | null | undefined): string {

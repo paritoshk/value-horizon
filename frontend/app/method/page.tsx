@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import PipelineIso from "@/components/desk/PipelineIso";
 
 function IcChip({ label, ic, p }: { label: string; ic?: number; p?: number }) {
   const ok = ic != null && p != null;
@@ -98,6 +99,21 @@ export default function MethodPage() {
           decision the math already made — and a guard rejects any rationale
           that invents numbers.
         </p>
+      </section>
+
+      <Separator className="my-12" />
+
+      <section className="space-y-6">
+        <h2 className="text-3xl font-semibold tracking-tight">
+          The pipeline, live
+        </h2>
+        <p className="text-lg leading-relaxed text-muted-foreground">
+          Every decision climbs the same four planes: raw venue data, the
+          statistically-culled signal surface, the agent policy layer, and
+          finally execution. The lit plane is where the system is working at
+          this moment — click any plane to see its live numbers.
+        </p>
+        <PipelineIso state={state ?? undefined} />
       </section>
 
       <Separator className="my-12" />

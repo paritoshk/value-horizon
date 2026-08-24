@@ -1,11 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSentinelState } from "@/lib/api";
 import { hasRound } from "@/lib/types";
-import { AGENTS, type AgentKey, useMidSeries } from "@/lib/desk";
+import { AGENTS, type AgentKey, useProbabilitySeries } from "@/lib/desk";
 import { COLORS, stanceColor, stanceLabel } from "@/lib/palette";
-import { SidebarProvider } from "@/components/ui/sidebar";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import {
   Card,
   CardContent,
@@ -17,7 +17,11 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import AgentSidebar from "@/components/desk/AgentSidebar";
-import PriceChart from "@/components/desk/PriceChart";
+import PriceChart, {
+  sliceRange,
+  type RangeKey,
+} from "@/components/desk/PriceChart";
+import PipelineIso from "@/components/desk/PipelineIso";
 import TradesTable from "@/components/desk/TradesTable";
 import PortfolioReadout from "@/components/desk/PortfolioReadout";
 import { TrendingDown, TrendingUp } from "lucide-react";
@@ -25,6 +29,15 @@ import { TrendingDown, TrendingUp } from "lucide-react";
 export default function DeskPage() {
   const { data: state } = useSentinelState();
   const [selected, setSelected] = useState<AgentKey>("influence_flow");
+  const [range, setRange] = useState<RangeKey>("All");
+
+  // Sidebar open state, restored from the shadcn cookie after mount so the
+  // collapse survives reloads (the provider writes the cookie on toggle).
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  useEffect(() => {
+    const m = document.cookie.match(/(?:^|;\s*)sidebar_state=(true|false)/);
+    if (m) setSidebarOpen(m[1] === "true");
+  }, []);
 
   const round = state && hasRound(state.agents) ? state.agents : null;
   const analysts = round?.analysts ?? [];
@@ -35,7 +48,8 @@ export default function DeskPage() {
     return state.markets.find((m) => m.market_id === round.market_id);
   }, [state, round]);
 
-  const series = useMidSeries(
+  // Real ~5-minute history bars + the live mid appended on each poll.
+  const series = useProbabilitySeries(
     focusMarket?.market_id,
     focusMarket?.mid,
     state?.ts
@@ -46,15 +60,27 @@ export default function DeskPage() {
 
   const currentPct =
     focusMarket?.mid != null ? focusMarket.mid * 100 : null;
+
+  // Change over the visible window (matches the chart's timeframe pills).
+  const windowed = useMemo(() => sliceRange(series, range), [series, range]);
   const change =
-    series.length >= 2 ? (series[series.length - 1].mid - series[0].mid) * 100 : 0;
+    windowed.length >= 2
+      ? (windowed[windowed.length - 1].mid - windowed[0].mid) * 100
+      : 0;
   const up = change >= 0;
 
   const sup = round?.supervisor;
 
   return (
     <SidebarProvider
-      style={{ "--sidebar-width": "22rem" } as React.CSSProperties}
+      open={sidebarOpen}
+      onOpenChange={setSidebarOpen}
+      style={
+        {
+          "--sidebar-width": "22rem",
+          "--sidebar-width-icon": "3.5rem",
+        } as React.CSSProperties
+      }
       className="min-h-0 items-stretch"
     >
       <AgentSidebar
@@ -69,6 +95,7 @@ export default function DeskPage() {
           {/* Focus market header — Robinhood Legend: big number up top */}
           <section>
             <div className="flex flex-wrap items-center gap-2">
+              <SidebarTrigger className="-ml-1.5" />
               <Badge variant="secondary" className="font-medium">
                 {selectedAgent.label} is driving
               </Badge>
@@ -115,7 +142,7 @@ export default function DeskPage() {
                   </div>
                 </div>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Implied YES probability · accumulated live over this session
+                  Implied YES probability · 5-minute venue bars with a live head
                 </p>
               </>
             )}
@@ -160,17 +187,24 @@ export default function DeskPage() {
             </Card>
           )}
 
+          {/* Live pipeline — isometric four-plane stack */}
+          <PipelineIso state={state} />
+
           {/* Chart */}
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Probability over time</CardTitle>
               <CardDescription>
-                Focus market implied YES probability, accumulated client-side
-                each poll.
+                Real 5-minute bars for the focus market; the head ticks with
+                each live poll.
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <PriceChart series={series} />
+              <PriceChart
+                series={series}
+                range={range}
+                onRangeChange={setRange}
+              />
             </CardContent>
           </Card>
 

@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useMarketHistory } from "./api";
 
 // The three agents shown on the desk, mapped to the API's analyst `name`s.
 export const AGENTS = [
@@ -8,16 +9,19 @@ export const AGENTS = [
     key: "influence_flow",
     label: "Lead-lag influence",
     attribute: "Influential wallets leading price",
+    initials: "LL",
   },
   {
     key: "flow_imbalance",
     label: "Order-flow imbalance",
     attribute: "Buy vs. sell pressure",
+    initials: "OF",
   },
   {
     key: "whale",
     label: "Whale flow",
     attribute: "Large net wallet positioning",
+    initials: "WF",
   },
 ] as const;
 
@@ -29,15 +33,15 @@ export interface MidPoint {
 }
 
 /**
- * Accumulate the focused market's `mid` across polls into a client-side series
- * (no per-market history endpoint exists). Resets when the focused market
- * changes. Keeps the last `cap` points.
+ * Accumulate the focused market's `mid` across /api/state polls. Used only as
+ * the live tail appended after the last real history bar, so the head of the
+ * chart moves between 30s history refreshes. Resets when focus changes.
  */
-export function useMidSeries(
+function useLiveTail(
   marketId: string | undefined,
   mid: number | null | undefined,
   ts: number | undefined,
-  cap = 120
+  cap = 240
 ): MidPoint[] {
   const [series, setSeries] = useState<MidPoint[]>([]);
   const marketRef = useRef<string | undefined>(undefined);
@@ -64,4 +68,30 @@ export function useMidSeries(
   }, [marketId, mid, ts, cap]);
 
   return series;
+}
+
+/**
+ * Real ~5-minute history bars from /api/history, with the live mid from
+ * /api/state polls appended after the last bar. The result is a genuinely
+ * moving stock-tracker series instead of a flat client-side accumulation.
+ */
+export function useProbabilitySeries(
+  marketId: string | undefined,
+  mid: number | null | undefined,
+  ts: number | undefined
+): MidPoint[] {
+  const { data: history } = useMarketHistory(marketId);
+  const tail = useLiveTail(marketId, mid, ts);
+
+  return useMemo(() => {
+    // Guard against keepPreviousData handing us the previous market's bars.
+    const bars =
+      history && history.market_id === marketId ? history.series : [];
+    const out: MidPoint[] = bars.map((b) => ({ t: b.ts, mid: b.p }));
+    const lastBarTs = out.length ? out[out.length - 1].t : 0;
+    for (const p of tail) {
+      if (p.t > lastBarTs) out.push(p);
+    }
+    return out;
+  }, [history, tail, marketId]);
 }
